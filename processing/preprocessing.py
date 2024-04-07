@@ -9,10 +9,11 @@ MAT_COLUMNS = ["export_X", "export_Y", "export_Type", "export_Trial", "export_On
 EMG_COLUMNS = ['EMG_0', 'EMG_1', 'EMG_2', 'EMG_3', 
                'EMG_4', 'EMG_5', 'EMG_6', 'EMG_7']
 
+
 def parse_args():
     parser = argparse.ArgumentParser('EMG Preprocessing script')
     parser.add_argument('-d', '--data_path', required=True,
-                        help="Path to all data stored in .npz format (after converter)")
+                        help="Path to .csv dataframe (after converter)")
     parser.add_argument('-n', '--name', required=True,
                         help="Result file name with .csv format")
     parser.add_argument('-bo', '--butter_order', required=False,
@@ -28,6 +29,7 @@ def parse_args():
                         default=20, type=int,
                         help="Number of elements in one trial")
     return parser.parse_args()
+
 
 def butter_processing(work_data: pd.DataFrame, 
                       fs: int, fc: int, butter_order: int) -> pd.DataFrame:
@@ -111,22 +113,44 @@ def scale_data(data):
     return data
 
 
-def reconstruct(path):
-    data = np.load(args.data_path)['arr_0']
-    print(data.shape)
-    df = pd.DataFrame(data, columns=EMG_COLUMNS + MAT_COLUMNS)
+def analysis_ready_data(df, fs, fc, butter_order, save_name=None, save=False):
+    if save:
+        assert save_name is not None, "To save you should also provide save_name"
+    df = butter_processing(df, fs=fs, fc=fc, 
+                           butter_order=butter_order)
+    df = on_paper_export(df)
+    df = scale_data(df)
 
+    if save:
+        print("Saving data...")
+        df.to_csv(save_name)
     return df
 
-def main(path, fs, fc, butter_order):
-    df = reconstruct(path)
-    df = butter_processing(df, fs=args.s_freq, fc=args.c_freq, 
-                           butter_order=args.butter_order)
+
+def sparse_ard(work_data, trial_len):
+    trials = np.unique(work_data["export_Trial"])
+    work_data_sparse = pd.DataFrame(columns=work_data.columns)
+    
+    for trial in trials:
+        trial_data = work_data[work_data["export_Trial"] == trial]
+        step = len(trial_data) // trial_len
+        end = step*trial_len
+        work_data_sparse = pd.concat([work_data_sparse, trial_data[:end:step]])
+
+    return work_data_sparse
+
+
+def main(path, df, fs, fc, butter_order, name):
+    df = pd.read_csv(path)
+    df = butter_processing(df, fs=fs, fc=fc, 
+                           butter_order=butter_order)
     df = on_paper_export(df)
+    df = scale_data(df)
+
     print("Saving data...")
-    np.savez_compressed(args.name, df.values)
+    df.to_csv(name)
 
 if __name__ == "__main__":
     args = parse_args()
     df = main(args.data_path, fs=args.s_freq, fc=args.c_freq, 
-                           butter_order=args.butter_order)
+             butter_order=args.butter_order, name=args.name)
