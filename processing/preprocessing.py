@@ -107,7 +107,6 @@ def scale_data(data):
             tmp -= tmp.min()
             tmp /= tmp.max()
             handled_data[i].extend(tmp)
-        print("Trial {}".format(round(trial / max(trials), 2)), end='\r')
     for i, col in enumerate(["export_X", "export_Y"]):
         data[col] = handled_data[i]
     return data
