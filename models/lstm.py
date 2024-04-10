@@ -41,7 +41,8 @@ class LSTM():
 
         return preds
 
-    def train(self, verbose=False):
+    def train(self,  epochs, verbose=False):
+        self.epochs = epochs
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         loss_fn = nn.MSELoss()
 
@@ -53,9 +54,8 @@ class LSTM():
         best_loss = 5252525
 
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        EPOCHS = 100
 
-        for epoch in range(EPOCHS):
+        for epoch in range(self.epochs):
             self.model.train()
             epoch_loss = 0
             for X_batch, y_batch in self.train_loader:
