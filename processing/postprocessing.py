@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from random import random
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 
 
 def train_test_df_split(df, step):
@@ -20,30 +21,45 @@ def train_test_df_split(df, step):
         test_df = test_df.drop((test_df[test_df["export_Trial"] == trial]).index)
     return train_df, test_df
 
+def window_maker(data, T, k, tpe):
+    trials = np.unique(data["export_Trial"])
+    windows = np.array([sliding_window_view(
+                            np.pad(
+                                data[data["export_Trial"] == trial].values[:, :8],
+                                ((T//2, T//2), (0, 0)),
+                                tpe
+                            ), (T, k)
+                        )[:, 0]
+                        for trial in trials])
+    windows = windows.reshape(-1, windows.shape[2], windows.shape[3])   
 
-def train_test_handling(train_df, test_df):
+    return windows
+
+def train_test_handling(train_df, test_df, win=False, win_shape=None, tpe=None):
     train_reg_data = train_df.values[:, :10]
-    X_train = train_reg_data[:, :8]
-    X_train = X_train.reshape(X_train.shape[0], -1)
-
     y_train = train_reg_data[:, 8:]
-
     train_trials = train_df["export_Trial"].values
     train_type = train_df["export_Type"].values
     
     test_reg_data = test_df.values[:, :10]
-    
-    X_test = test_reg_data[:, :8]
-    X_test = X_test.reshape(X_test.shape[0], -1)
-
     y_test = test_reg_data[:, 8:]
-
     test_trials = test_df["export_Trial"].values
     test_type = test_df["export_Type"].values
+    
+    if win:
+        X_train = window_maker(train_df, win_shape[0], win_shape[1], tpe)
+        X_train = X_train.reshape(X_train.shape[0], -1)
+        
+        X_test = window_maker(test_df, win_shape[0], win_shape[1], tpe)
+        X_test = X_test.reshape(X_test.shape[0], -1)
+    else:
+        X_train = train_reg_data[:, :8]
+        X_train = X_train.reshape(X_train.shape[0], -1)
+        X_test = test_reg_data[:, :8]
+        X_test = X_test.reshape(X_test.shape[0], -1)
 
     return X_train, y_train, train_trials, train_type, \
            X_test, y_test, test_trials, test_type
-
 
 def emg_augmentation(df, n=10, p=0.5, d=4):
     def get_mask(mask, n):
