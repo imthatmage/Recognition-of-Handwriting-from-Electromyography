@@ -10,5 +10,20 @@ Models we tried so far
 ![](examples/xgboost_vis.png)|
  **Random Forest** |
 ![](examples/rf_vis.png)|
+ **KNN Regression** |
+![](examples/knn_reg_vis.png)|
  **LSTM** |
 ![](examples/lstm_vis.png)|
+
+Compare test data (orange) and prediction (blue)
+ Linear Model |
+ :---------|
+![](examples/lr_trials_vis.png)|
+ **XGBoost** |
+![](examples/xg_trials_vis.png)|
+ **Random Forest** |
+![](examples/rf_trials_vis.png)|
+ **KNN Regression** |
+![](examples/knn_trials_vis.png)|
+ **LSTM** |
+![](examples/lstm_trials_vis.png)|
